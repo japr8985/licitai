@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0df2f2;
+  --color-navy-deep: #0a192f;
+  --color-navy-light: #112240;
+  --color-slate-tech: #8892b0;
+  --color-cyber-teal: #0df2f2;
+  --color-emerald-accent: #10b981;
+  
+  
+}
+.custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(13, 242, 242, 0.3);
+        border-radius: 10px;
+    }
+
+/* LOS EFECTOS DE STITCH (CALCADOS) */
+@utility glass-panel {
+  background: rgba(16, 34, 34, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(13, 242, 242, 0.1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+@utility tech-grid {
+  background-image: 
+    linear-gradient(to right, #1e293b 1px, transparent 1px), 
+    linear-gradient(to bottom, #1e293b 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at 50% 50%, black, transparent 80%);
+}
+
+@utility scanline-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, rgba(13, 242, 242, 0.05), transparent);
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
