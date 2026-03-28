@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Enums\Tenant\ProjectStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\ProjectRequest;
 use App\Jobs\Tenant\SendProjectToN8n;
 use App\Models\Tenant\Project;
 use App\Tenant\Reports\ProjectAnalysisReport;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\Tenant\Employee;
 
 class ProjectController extends Controller
 {
@@ -49,17 +51,8 @@ class ProjectController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(ProjectRequest $request)
     {
-        $request->validate([
-            'title' => 'required|string',
-            'issuing_entity' => 'required|string',
-            'valuation' => 'nullable|string',
-            'upload_uuid' => 'required|string', // El ID con el que subimos los chunks
-            'file_name' => 'required|string',
-            'total_chunks' => 'required|integer'
-        ]);
-
         $finalPath = $this->fileService->assembleChunks(
             $request->upload_uuid,
             $request->total_chunks,
@@ -149,9 +142,9 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function reanalyze(Project $project, Request $request) 
+    public function reanalyze(Project $project, Request $request)
     {
-    
+
         // 1. Validamos que envíen texto (opcional pero recomendado)
         $data = $request->validate([
             'additional_instructions' => 'nullable|string|max:2000'
@@ -170,11 +163,78 @@ class ProjectController extends Controller
 
         // 4. Disparamos el Job
         // El Job deberá leer $project->ai_analysis_data['meta_data']['last_refinement_prompt']
-        SendProjectToN8n::dispatch($project, tenant('id'));
+        SendProjectToN8n::dispatch($project->id, tenant('id'));
 
         return response()->json([
             'success' => true,
             'message' => 'Neural Engine Restarted with new parameters.'
         ]);
+    }
+
+    public function squadRecommendations(Project $project)
+    {
+        // 1. Extraemos TODAS las skills requeridas del roadmap
+        $analysisData = $project->ai_analysis_data ?? [];
+        $roadmap = $analysisData['suggested_roadmap'] ?? [];
+
+        $requiredSkills = collect($roadmap)->flatMap(function ($phase) {
+            return $phase['required_skills'] ?? [];
+        })->unique()->values()->toArray();
+
+        if (empty($requiredSkills)) {
+            return $this->success([]);
+        }
+
+        // 2. Buscamos empleados activos (y disponibles)
+        // CTO FIX: Agregamos with('user') para matar el problema N+1 de base de datos
+        $employees = Employee::with('user')->where('status', 'active')->get();
+
+        // 3. Calculamos el "Match Score" con "Fuzzy Matching"
+        $reqSkillsLower = array_map('strtolower', $requiredSkills);
+
+        $recommendedSquad = $employees->map(function ($employee) use ($requiredSkills, $reqSkillsLower) {
+
+            $employeeSkills = $employee->extracted_skills ?? [];
+            $empSkillsLower = array_map('strtolower', $employeeSkills);
+
+            $matchedSkills = [];
+
+            // Búsqueda inteligente: "IoT" hará match con "IoT Implementation"
+            foreach ($empSkillsLower as $empSkill) {
+                foreach ($reqSkillsLower as $index => $reqSkill) {
+                    // Verificamos si la skill del empleado está dentro de la requerida o viceversa
+                    if (str_contains($reqSkill, $empSkill) || str_contains($empSkill, $reqSkill)) {
+                        // Guardamos el nombre original de la skill requerida para que la UI se vea limpia
+                        $matchedSkills[] = $requiredSkills[$index];
+                    }
+                }
+            }
+
+            $matchedSkills = array_unique($matchedSkills);
+            $matchCount = count($matchedSkills);
+            $totalRequired = count($requiredSkills);
+
+            $matchPercentage = $totalRequired > 0 ? round(($matchCount / $totalRequired) * 100) : 0;
+
+            return [
+                'id' => $employee->id,
+                'user_id' => $employee->user_id,
+                'name' => $employee->user->name ?? 'Unknown Agent',
+                'job_title' => $employee->job_title,
+                'avatar_secure_url' => $employee->avatar_secure_url, // Asegúrate de llamar a la URL segura que creamos
+                'match_percentage' => $matchPercentage,
+                'matched_skills' => array_values($matchedSkills),
+                'missing_skills' => array_values(array_diff($requiredSkills, $matchedSkills))
+            ];
+        })
+            ->filter(function ($candidate) {
+                // Para pruebas, puedes cambiar esto a >= 0 si quieres ver a todos los empleados
+                return $candidate['match_percentage'] > 0;
+            })
+            ->sortByDesc('match_percentage')
+            ->take(5)
+            ->values();
+
+        return $this->success($recommendedSquad);
     }
 }

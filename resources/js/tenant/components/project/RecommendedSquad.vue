@@ -9,110 +9,126 @@
             <div class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Team ID:
                 UNIT_402_ALPHA</div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div
-                class="bg-primary/5 border-2 border-primary/50 rounded-xl p-4 flex flex-col gap-4 relative overflow-hidden glow-teal">
-                <div class="absolute top-2 right-2">
-                    <span class="bg-primary text-slate-900 text-[8px] font-black px-2 py-0.5 rounded uppercase">Top
-                        Match</span>
+        
+        <div v-if="!enrichedSquad.length" class="text-center py-10 opacity-50">
+            <span class="material-symbols-outlined text-4xl mb-2">engineering</span>
+            <p class="text-xs font-mono uppercase tracking-widest">No squad members assigned yet.</p>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            
+            <div v-for="member in enrichedSquad" :key="member.employee_id"
+                class="rounded-xl p-4 flex flex-col gap-4 relative overflow-hidden transition-all duration-300"
+                :class="[
+                    member.match_percentage >= 80 ? 'bg-primary/5 border-2 border-primary/50 glow-teal' : 'bg-slate-800/20 border border-white/10 hover:border-white/20'
+                ]">
+                
+                <div v-if="member.isLoading" class="absolute inset-0 bg-slate-800 animate-pulse z-10 flex items-center justify-center">
+                    <span class="text-[10px] font-mono text-primary/50 animate-bounce">SYNCING_DATA...</span>
                 </div>
-                <div class="flex items-center gap-3">
-                    <div class="size-12 rounded bg-slate-800 border border-primary/30 p-0.5 overflow-hidden">
-                        <img alt="Sarah Connor" class="w-full h-full object-cover grayscale brightness-125"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuu94-xudL3K2n95rXR2zgCyCcHFk9PCEjSMPlr7vSBObprkaUx5KkJ5q8jdRTqCucp2kK09b2ANWsRU_WxCZwDvra_7cnwAs0y6BSeuI-r_UT2Jd8hrMRGVdVI_pGge8tFsYhOc9BZviAZUPbdtiv1q15iKaPp3MTU-gf8R5ZYHZJILqhTpy5s58En0_NuvwvrB6Aa0WTeWgXob_u6jg0naWay0yCOPncGw4MbhxxAh1TNttS97S-SbseD3tEVDSQikENuiKHOUm0" />
-                    </div>
-                    <div>
-                        <p class="text-white font-bold text-sm">Sarah Connor</p>
-                        <p class="text-primary text-[10px] font-mono uppercase">Lead Architect</p>
-                    </div>
+
+                <div v-if="member.match_percentage >= 80" class="absolute top-2 right-2">
+                    <span class="bg-primary text-slate-900 text-[8px] font-black px-2 py-0.5 rounded uppercase shadow-[0_0_10px_rgba(13,242,242,0.4)]">
+                        Top Match
+                    </span>
                 </div>
-                <div class="space-y-1">
-                    <div class="flex justify-between text-[10px] font-mono">
-                        <span class="text-slate-400 uppercase">Match Score</span>
-                        <span class="text-primary">98% Fit</span>
+
+                <div class="flex items-center gap-3 mt-4">
+                    <div class="size-12 rounded border p-0.5 overflow-hidden shrink-0"
+                         :class="member.match_percentage >= 80 ? 'bg-slate-800 border-primary/30' : 'bg-slate-800 border-white/10'">
+                        <img 
+                            v-if="member.employee_details?.avatar_secure_url" 
+                            :alt="member.employee_details?.user.name" 
+                            class="w-full h-full object-cover"
+                            :src="member.employee_details.avatar_secure_url" 
+                        />
+                        <div v-else class="w-full h-full bg-navy-deep flex items-center justify-center">
+                            <span class="material-symbols-outlined text-slate-500 text-xl">person</span>
+                        </div>
                     </div>
-                    <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-primary w-[98%]"></div>
-                    </div>
-                </div>
-                <p class="text-[10px] text-slate-500 font-mono italic">Matches: Kubernetes, ISO 27001,
-                    Hybrid Cloud</p>
-            </div>
-            <div
-                class="bg-slate-800/20 border border-white/10 rounded-xl p-4 flex flex-col gap-4 hover:border-white/20 transition-all">
-                <div class="flex items-center gap-3">
-                    <div class="size-12 rounded bg-slate-800 border border-white/10 p-0.5 overflow-hidden">
-                        <img alt="Marcus Wright" class="w-full h-full object-cover grayscale brightness-110"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrM_9YaY9K7O3dd75q17GP0IYDvRJ4lse023kF0BmnDzmuDhNtKcViZR9asjhXO13SxZAh4DDLNISd8W4lOrR2PZtrcOcJ0yQ5ehaR7-FTkysm71mijMogH6LVTqQRluY2tFHEq6_bY2ZRYhbSoy_giM3lihrpG5UC8-Q3DEDBx3kzDfGDlQ4LW66pnuiDiWsFTH54PfBaWjdkokHNf3YEAHux0qLYd4r6O1deZfkY9Y-rcj-IU7zvUdjPg2GCnLzImDNTeJTeNTZ3" />
-                    </div>
-                    <div>
-                        <p class="text-white font-bold text-sm">Marcus Wright</p>
-                        <p class="text-slate-400 text-[10px] font-mono uppercase">Cybersecurity Spec</p>
-                    </div>
-                </div>
-                <div class="space-y-1">
-                    <div class="flex justify-between text-[10px] font-mono">
-                        <span class="text-slate-400 uppercase">Match Score</span>
-                        <span class="text-slate-300">92% Fit</span>
-                    </div>
-                    <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-slate-400 w-[92%]"></div>
-                    </div>
-                </div>
-                <p class="text-[10px] text-slate-500 font-mono italic">Matches: Penetration Testing,
-                    SOC2</p>
-            </div>
-            <div
-                class="bg-slate-800/20 border border-white/10 rounded-xl p-4 flex flex-col gap-4 hover:border-white/20 transition-all">
-                <div class="flex items-center gap-3">
-                    <div class="size-12 rounded bg-slate-800 border border-white/10 p-0.5 overflow-hidden">
-                        <img alt="Grace Harper" class="w-full h-full object-cover grayscale brightness-110"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkhujM6UCHsafkQAEt_vHps8XAyAXdQ-mD0iTAjatvsLyfJT8KNckzpzS8Y1Mo4393ECcqTBsgKjnnEP1Ks2EFd3TZXP0G7Fqit7teOnXEdS5fPVMwOgjouEBE8JYjQZOTjKo1-lshXjYo99qos2Wna7rW7MI-PbIuEPJdEB7zn4lxVohCmYuYiO_hFTMkt7QCFhnZA0n5pCaBY3td5Fua1JJE1mMrlbLPMENa8rOzczADuISArqleFjIgegNaOkCW8XaG3xd46SRr" />
-                    </div>
-                    <div>
-                        <p class="text-white font-bold text-sm">Grace Harper</p>
-                        <p class="text-slate-400 text-[10px] font-mono uppercase">DevOps Engineer</p>
-                    </div>
-                </div>
-                <div class="space-y-1">
-                    <div class="flex justify-between text-[10px] font-mono">
-                        <span class="text-slate-400 uppercase">Match Score</span>
-                        <span class="text-slate-300">88% Fit</span>
-                    </div>
-                    <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-slate-400 w-[88%]"></div>
-                    </div>
-                </div>
-                <p class="text-[10px] text-slate-500 font-mono italic">Matches: Terraform, AWS Lambda
-                </p>
-            </div>
-            <div
-                class="bg-slate-800/20 border border-white/10 rounded-xl p-4 flex flex-col gap-4 hover:border-white/20 transition-all">
-                <div class="flex items-center gap-3">
-                    <div class="size-12 rounded bg-slate-800 border border-white/10 p-0.5 overflow-hidden">
-                        <img alt="Kyle Reese" class="w-full h-full object-cover grayscale brightness-110"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwDro0CdEhSoZiQ4gb-_lmT_wsVAsBJAAQHttcf5P9wS1aR1NuneFbgO4KYvyqYbdgf2vq8cnvEJ3KI_C20OJi_oUUDoYUbpmsPCXGEizl_rthYGxkJphXXxxMkdXwFxVajqKkKQ-cf0shbz1QCIMjSHU1-JiN63sE4MXnvTd68vgYQ9vSVYkWTZzog7D2nJ0j7gEYOwlM98RmqFOiAxNEPJg80-ahiYWFkcSaeoiJ_zZmZoFOc7CESUcAHpoMv697DMgCKegzE7aL" />
-                    </div>
-                    <div>
-                        <p class="text-white font-bold text-sm">Kyle Reese</p>
-                        <p class="text-slate-400 text-[10px] font-mono uppercase">Legal &amp; Compliance
+                    
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white font-bold text-sm truncate" :title="member.employee_details?.name || 'Unknown Agent'">
+                            {{ member.employee_details?.user.name || 'Unknown Agent' }}
+                        </p>
+                        <p class="text-[10px] font-mono uppercase truncate"
+                           :class="member.match_percentage >= 80 ? 'text-primary' : 'text-slate-400'">
+                            {{ member.employee_details?.job_title || 'Pending Data' }}
                         </p>
                     </div>
                 </div>
+
                 <div class="space-y-1">
                     <div class="flex justify-between text-[10px] font-mono">
                         <span class="text-slate-400 uppercase">Match Score</span>
-                        <span class="text-slate-300">85% Fit</span>
+                        <span :class="member.match_percentage >= 80 ? 'text-primary font-bold' : 'text-slate-300'">
+                            {{ member.match_percentage }}% Fit
+                        </span>
                     </div>
                     <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-slate-400 w-[85%]"></div>
+                        <div class="h-full transition-all duration-1000" 
+                             :class="member.match_percentage >= 80 ? 'bg-primary' : 'bg-slate-400'"
+                             :style="{ width: `${member.match_percentage}%` }">
+                        </div>
                     </div>
                 </div>
-                <p class="text-[10px] text-slate-500 font-mono italic">Matches: Public Sector Tenders
-                </p>
+
+                <div class="mt-auto pt-2 border-t border-white/5">
+                    <p class="text-[9px] text-slate-400 font-mono italic leading-relaxed line-clamp-3" :title="member.reasoning">
+                        "{{ member.reasoning }}"
+                    </p>
+                </div>
             </div>
+            
         </div>
     </div>
 </template>
 <script setup lang="ts">
+import api from '@tenant/api/axios';
+import { ApiResponse, Employee, SuggestedSquad } from '@tenant/types/api';
+import { onMounted, ref } from 'vue';
+
+const props = defineProps<{
+    squad: SuggestedSquad[]
+}>();
+const employees = ref<SuggestedSquad[]>([]);
+// Creamos una interfaz extendida para nuestro objeto enriquecido final
+interface EnrichedSquadMember extends SuggestedSquad {
+    employee_details?: Employee;
+    isLoading: boolean;
+}
+const enrichedSquad = ref<EnrichedSquadMember[]>(
+    props.squad.map(member => ({ ...member, isLoading: true }))
+);
+const loadEmployees = async () => {
+    try {
+        // Ejecutamos todas las peticiones en paralelo para mayor velocidad
+        const requests = enrichedSquad.value.map(member => 
+            api.get<ApiResponse<Employee>>(`/employees/${member.employee_id}`)
+               .catch(err => {
+                   console.error(`Failed to load employee ${member.employee_id}`, err);
+                   return null; // Si uno falla, no rompemos el resto
+               })
+        );
+
+        const responses = await Promise.all(requests);
+
+        // Mapeamos las respuestas de vuelta a nuestro array reactivo
+        responses.forEach((response, index) => {
+            if (response && response.data.success) {
+                enrichedSquad.value[index].employee_details = response.data.content;
+            }
+            // Independientemente de si falló o no, apagamos el loader
+            enrichedSquad.value[index].isLoading = false; 
+        });
+
+    } catch (error) {
+        console.error("Critical error fetching squad details:", error);
+    }
+};
+onMounted(async () => {
+    if (props.squad && props.squad.length > 0) {
+        await loadEmployees();
+    }
+});
 </script>

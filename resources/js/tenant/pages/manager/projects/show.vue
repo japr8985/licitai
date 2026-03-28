@@ -18,12 +18,21 @@ import ProjectStatusBadge from '@tenant/components/project/ProjectStatusBadge.vu
 
 const route = useRoute()
 const ui = useUIStore();
-const project: Ref<Project> = ref({} as Project);
+const project: Ref<Project> = ref({
+    status: 'processing', // Para que el badge no rompa
+    ai_score: 0, // El ScoreGauge espera un número, no undefined
+    ai_analysis_data: {
+        margin_protection: {
+            financial_red_flags: [] // El RiskRadar espera un array
+        },
+        suggested_roadmap: [] // El SuggestedRoadmap espera un array
+    }
+} as unknown as Project);
 
 onMounted(async () => {
     await loadData()
 });
-const loadData = async() => {
+const loadData = async () => {
     const id = route.params.id.toString()
     const res = await api.get<ApiResponse<Project>>(`/projects/${id}`);
     const { content } = res.data;
@@ -33,7 +42,7 @@ const projectId = computed((): string => {
     return route.params.id.toString();
 });
 const budget = computed((): string => {
-    return Intl.NumberFormat(undefined, {currency: 'USD', style: 'currency'}).format(project.value?.valuation || 0);
+    return Intl.NumberFormat(undefined, { currency: 'USD', style: 'currency' }).format(project.value?.valuation || 0);
 })
 const handleRefresh = async () => {
     await loadData()
@@ -42,7 +51,7 @@ const onReanalysisStarted = () => {
     // 1. Actualización Optimista: 
     // Cambiamos el estado localmente para feedback instantáneo
     project.value.status = 'processing';
-    
+
     // 2. (Opcional) Polling o Websocket
     // Aquí podrías iniciar un intervalo para consultar el estado cada 5 segundos
     // hasta que vuelva a ser 'analyzed'.
@@ -53,7 +62,7 @@ const pollStatus = () => {
         try {
             // Consultamos solo el estado
             const { data } = await api.get(`/projects/${project.value.id}`);
-            
+
             if (data.content.status === 'analyzed') {
                 // Si terminó, actualizamos todo el objeto project y paramos el poll
                 Object.assign(project, data.content); // Reactividad de Vue 3
@@ -76,7 +85,7 @@ const pollStatus = () => {
                     <div class="flex flex-col">
                         <div class="flex items-center gap-3">
                             <h2 class="text-white text-lg font-bold leading-none truncate max-w-[300px] md:max-w-md">
-                                {{ project.title}}
+                                {{ project.title }}
                             </h2>
                             <ProjectStatusBadge :status="project.status" />
                         </div>
@@ -86,8 +95,8 @@ const pollStatus = () => {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <DownloadOriginalPdf :id="projectId"/>
-                    <ReanalysisModal :project-id="projectId" @reanalysis-started="onReanalysisStarted"/>
+                    <DownloadOriginalPdf :id="projectId" />
+                    <ReanalysisModal :project-id="projectId" @reanalysis-started="onReanalysisStarted" />
                     <ExportReport :project="project" />
                 </div>
             </div>
@@ -95,22 +104,23 @@ const pollStatus = () => {
         <div class="max-w-[1400px] mx-auto w-full p-6 lg:p-10">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pb-40">
                 <div class="md:col-span-8">
-                    <ExecutiveTerminal summary="xz"/>
+                    <ExecutiveTerminal :summary="project?.ai_analysis_data?.analysis_core?.executive_summary" />
                 </div>
                 <div class="md:col-span-4">
-                    <ScoreGauge :score="project.ai_score" :verdict="'conditional_go'"/>
+                    <ScoreGauge :score="project.ai_score" :verdict="'conditional_go'" />
                 </div>
                 <div class="md:col-span-7">
-                    <RiskRadar />
+                    <RiskRadar :redflags="project?.ai_analysis_data?.margin_protection?.financial_red_flags" />
                 </div>
                 <div class="md:col-span-5">
-                    <MetricAnalysis />
+                    <MetricAnalysis v-if="project?.ai_analysis_data?.scoring_engine?.breakdown"
+                        :breakdown="project.ai_analysis_data.scoring_engine.breakdown" />
                 </div>
                 <div class="md:col-span-12">
-                    <RecommendedSquad />
+                    <RecommendedSquad :squad="project.ai_analysis_data?.suggested_squad" v-if="project.id"/>
                 </div>
                 <div class="md:col-span-12">
-                    <SuggestedRoadmap />
+                    <SuggestedRoadmap :roadmap="project?.ai_analysis_data?.suggested_roadmap"/>
                 </div>
                 <div class="md:col-span-12">
                     <div
@@ -159,8 +169,8 @@ const pollStatus = () => {
                         </div>
                     </div>
                 </div>
-                    
-                </div>
+
+            </div>
             <div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                 <div
                     class="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-4 flex items-center gap-8 shadow-2xl">

@@ -47,6 +47,20 @@ const routes = [
                                 component: () => import('../pages/manager/projects/show.vue')
                             }
                         ]
+                    },
+                    {
+                        path: 'employees',
+                        children: [
+                            {
+                                path: '',
+                                name: 'manager.employees.index',
+                                meta: {
+                                    layout: 'manager',
+                                    auth: true
+                                },
+                                component: () => import('../pages/manager/employees/index.vue')
+                            }
+                        ]
                     }
                 ]
             }

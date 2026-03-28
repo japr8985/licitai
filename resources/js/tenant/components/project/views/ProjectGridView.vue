@@ -35,7 +35,7 @@ const getCardStyle = (project: Project) => {
 
 <template>
     <div class="h-full w-full overflow-y-auto custom-scrollbar pr-2 pb-10">
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] overflow-y-auto custom-scrollbar gap-6 pb-10">
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] overflow-y-auto custom-scrollbar gap-6 pb-10 pt-1">
 
             <div v-for="project in projects" :key="project.id"
                 class="glass-card rounded-xl border flex flex-col h-full group transition-all duration-300 hover:-translate-y-1 relative overflow-hidden"

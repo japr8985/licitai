@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
 import api from '@tenant/api/axios';
-import { ApiResponse } from '@tenant/types/api';
+import { ApiResponse, ValidationErrors } from '@tenant/types/api';
 import { ChunkUploader, UploadResult } from '@tenant/services/ChunkUploader';
-
+import axios, { AxiosError } from 'axios';
+import { useUIStore, Toast } from '@tenant/store/ui';
+import Dropzone from './ui/Dropzone.vue';
+import InputField from './ui/InputField.vue';
+import NumberInput from './ui/NumberInput.vue';
+import RadioGroup from './ui/RadioGroup.vue';
 const props = defineProps<{ isOpen: boolean }>();
 const emit = defineEmits(['close', 'projectCreated']);
-
+const ui = useUIStore();
 const activeTab = ref<'structured' | 'agent'>('structured');
 const isUploading = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -15,20 +20,21 @@ const currentUploader = ref<ChunkUploader | null>(null);
 const uploadProgress = ref(0);
 const selectedFile = ref<File | null>(null);
 const form = reactive({
-    title: 'Implementación de una Infraestructura de Nube Híbrida y Sistema de Gestión de Identidades Distribuidas',
-    issuing_entity: 'MINISTERIO DE MODERNIZACIÓN TECNOLÓGICA',
-    valuation: "1250000"
+    title: '',
+    issuing_entity: '',
+    valuation: 0
 });
+const formErrors = ref<ValidationErrors>({})
 
 const handleFileUpload = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
-    
+
     if (!file) return;
 
     selectedFile.value = file;
     selectedFileName.value = file.name;
-    
+
     console.log("PDF asegurado en memoria:", file.name);
 };
 
@@ -37,6 +43,8 @@ const triggerFileInput = () => {
 };
 
 const establishProject = async () => {
+    if (!selectedFile.value) return; // Validación simple
+
     const formData = new FormData();
     formData.append('title', form.title);
     formData.append('issuing_entity', form.issuing_entity);
@@ -44,18 +52,17 @@ const establishProject = async () => {
 
     try {
         isUploading.value = true;
-        
+        uploadProgress.value = 0;
+
         // 1. Iniciar subida
         const uploader = new ChunkUploader(selectedFile.value!, {
             onProgress: (p) => uploadProgress.value = p
         });
-        
-        // 2. Esperar resultado
-        // Si start() falla, irá directo al catch. 
-        // Si tiene éxito, 'result' tendrá los datos.
-        const result = await uploader.start(); 
+        currentUploader.value = uploader;
 
-        // 3. Verificación de seguridad antes de seguir
+        // 2. Esperar resultado
+        const result = await uploader.start();
+
         if (!result || !result.upload_uuid) {
             throw new Error("La subida terminó pero no devolvió un UUID válido.");
         }
@@ -64,7 +71,7 @@ const establishProject = async () => {
             title: form.title,
             issuing_entity: form.issuing_entity,
             valuation: form.valuation,
-            upload_uuid: result.upload_uuid, // Asegúrate que el servicio devuelva esto
+            upload_uuid: result.upload_uuid,
             file_name: result.file_name,
             total_chunks: result.total_chunks
         };
@@ -72,16 +79,28 @@ const establishProject = async () => {
         const response = await api.post('/projects/finalize', finalPayload);
 
         emit('projectCreated', response.data.content);
-        handleClose(); 
+        handleClose();
+        ui.notify('info', 'Project procesing...', 'Procesing')
 
     } catch (error: any) {
-        const errorMessage = error instanceof Error ? error.message : "Internal Neural Link Failure";
-        // alert(`ERROR: ${errorMessage}`);
+        if (error?.status) {
+            if (error.status === 422) {
+
+                const errorData = error.data as ApiResponse<ValidationErrors>;
+                formErrors.value = errorData.content;
+                ui.notify('error', 'Invalid data', errorData.message);
+                return;
+            }
+            ui.notify('error', 'System Error', error.response?.data?.message || 'Unexpected error occurred.');
+        } else {
+            console.error(error)
+        }
     } finally {
         isUploading.value = false;
         currentUploader.value = null;
     }
 };
+
 const handleClose = () => {
     if (isUploading.value && currentUploader.value) {
         currentUploader.value.abort();
@@ -89,120 +108,201 @@ const handleClose = () => {
     form.title = '';
     form.issuing_entity = '';
     form.valuation = '';
-    selectedFile.value = null;     
+    selectedFile.value = null;
     selectedFileName.value = null;
+    uploadProgress.value = 0;
     emit('close');
 }
+
+const onFileSelected = (file: File) => {
+    selectedFile.value = file;
+    selectedFileName.value = file.name
+};
 </script>
 
 <template>
     <Transition name="neural">
-        <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            
-            <div 
-                class="absolute inset-0 bg-navy-deep/80 backdrop-blur-sm cursor-pointer" 
-                @click="emit('close')"
-            ></div>
+        <!-- <CyberModal 
+            title="QUICK_SCAN"
+            subtitle="Diagnostic Tool"
+            statusText="READY"
+            statusColor="emerald"
+            maxWidth="md"
+        >
+            <template #trigger="{ open }">
+                <button @click="open" class="px-6 py-2 border border-[#0df2f2] text-[#0df2f2] font-mono hover:bg-[#0df2f2] hover:text-[#0a192f] transition-colors">
+                    Abrir Modal Autónomo
+                </button>
+            </template>
 
-            <div class="glass-panel w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] relative z-10">
+            <div class="text-slate-300 font-mono text-sm space-y-4">
+                <p>Este modal se gestiona solo. No ensuciaste tu &lt;script&gt; con variables reactivas.</p>
+                <div class="p-4 bg-white/5 border border-white/10">
+                    SISTEMA OPERATIVO: NORMAL
+                </div>
+            </div>
 
-                <div class="flex items-center justify-between border-b border-white/10 px-8 bg-navy-light/60 shrink-0">
-                    <div class="flex gap-8">
+            <template #footer="{ close }">
+                <div class="w-full flex justify-end">
+                    <button @click="close" class="px-4 py-2 bg-red-500/10 text-red-500 font-mono text-xs hover:bg-red-500 hover:text-white transition-colors">
+                        CLOSE_TERMINAL
+                    </button>
+                </div>
+            </template>
+        </CyberModal> -->
+        <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 perspective-[1000px]">
+
+            <div class="absolute inset-0 bg-navy-deep/80 backdrop-blur-sm cursor-pointer modal-backdrop"
+                @click="handleClose"></div>
+
+            <div
+                class="glass-panel hologram-border w-full max-w-4xl rounded-xl overflow-hidden flex flex-col max-h-[90vh] relative transform-gpu shadow-2xl z-10">
+
+                <div
+                    class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyber-teal rounded-tl-xl pointer-events-none">
+                </div>
+                <div
+                    class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyber-teal rounded-tr-xl pointer-events-none">
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-cyber-teal rounded-bl-xl pointer-events-none">
+                </div>
+                <div
+                    class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-cyber-teal rounded-br-xl pointer-events-none">
+                </div>
+
+                <div
+                    class="flex items-center justify-between border-b border-cyber-teal/20 px-8 bg-navy-light/80 relative shrink-0">
+                    <div
+                        class="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyber-teal/50 to-transparent">
+                    </div>
+                    <div class="flex gap-1">
                         <button @click="activeTab = 'structured'"
-                            :class="['py-5 text-[11px] font-mono tracking-[0.2em] border-b-2 transition-all outline-none',
-                                activeTab === 'structured' ? 'border-cyber-teal text-cyber-teal font-bold' : 'border-transparent text-slate-tech hover:text-white']">
+                            class="py-5 px-4 text-[11px] font-mono tracking-[0.2em] border-b-2 transition-all group outline-none"
+                            :class="activeTab === 'structured' ? 'border-cyber-teal text-cyber-teal font-bold bg-cyber-teal/5 shadow-[0_-10px_20px_rgba(13,242,242,0.1)]' : 'border-transparent text-slate-tech hover:text-white hover:bg-white/5'">
                             STRUCTURED_INGEST
                         </button>
                         <button @click="activeTab = 'agent'"
-                            :class="['py-5 text-[11px] font-mono tracking-[0.2em] border-b-2 transition-all outline-none',
-                                activeTab === 'agent' ? 'border-cyber-teal text-cyber-teal font-bold' : 'border-transparent text-slate-tech hover:text-white']">
+                            class="py-5 px-4 text-[11px] font-mono tracking-[0.2em] border-b-2 transition-all outline-none"
+                            :class="activeTab === 'agent' ? 'border-cyber-teal text-cyber-teal font-bold bg-cyber-teal/5 shadow-[0_-10px_20px_rgba(13,242,242,0.1)]' : 'border-transparent text-slate-tech hover:text-white hover:bg-white/5'">
                             AGENT_DIALOGUE
                         </button>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-mono text-emerald-accent uppercase">Workbench_Active</span>
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-accent animate-pulse"></span>
+                    <div class="flex items-center gap-3 bg-navy-deep/50 px-3 py-1.5 rounded border border-white/5">
+                        <span
+                            class="text-[10px] font-mono text-emerald-accent uppercase crt-flicker">Workbench_Active</span>
+                        <span class="relative flex h-2 w-2">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-accent opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-accent"></span>
+                        </span>
                     </div>
                 </div>
 
-                <div class="flex-grow overflow-y-auto p-8 custom-scrollbar">
-                    
-                    <div v-if="activeTab === 'structured'" class="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
-                        <div class="space-y-6">
-                            <div class="space-y-2">
-                                <label class="block text-[10px] font-mono text-slate-tech tracking-widest uppercase">Project Title</label>
-                                <input v-model="form.title" class="input-cyber" placeholder="e.g. Quantum Mesh Expansion" type="text" />
-                            </div>
-                            <div class="space-y-2">
-                                <label class="block text-[10px] font-mono text-slate-tech tracking-widest uppercase">Issuing Entity</label>
-                                <input v-model="form.issuing_entity" class="input-cyber" placeholder="e.g. Global Defense Command" type="text" />
-                            </div>
-                            <div class="space-y-2">
-                                <label class="block text-[10px] font-mono text-slate-tech tracking-widest uppercase">Estimated Valuation</label>
-                                <div class="relative group">
-                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-cyber-teal font-mono text-sm pointer-events-none transition-colors group-focus-within:text-white">$</span>
-                                    <input v-model="form.valuation" class="input-cyber !pl-10 font-mono" placeholder="0.00" type="text" />
-                                </div>
-                            </div>
+                <div class="flex-grow overflow-y-auto p-8 relative custom-scrollbar">
+                    <div class="absolute inset-0 tech-grid-bg opacity-20 pointer-events-none"></div>
+
+                    <div v-if="activeTab === 'structured'"
+                        class="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10 h-full">
+                        <div class="space-y-1">
+                            <InputField 
+                                label="Project Title" 
+                                placeholder="e.g. QUANTUM_MESH_EXPANSION"
+                                v-model="form.title"
+                                :error="formErrors.title"
+                                />
+                            <InputField 
+                                label="Issuing Entity" 
+                                placeholder="e.g. GLOBAL_DEFENSE_CMD"
+                                v-model="form.issuing_entity"
+                                :error="formErrors.issuing_entity"
+                                />
+                            <NumberInput 
+                                v-model="form.valuation" 
+                                label="Estimated Valuation" 
+                                prefix="$"
+                                placeholder="0.00"
+                                :error="formErrors.valuation"
+                            />
                         </div>
 
                         <div class="flex flex-col h-full">
-                            <label class="block text-[10px] font-mono text-slate-tech tracking-widest uppercase mb-2">Neural Dropzone</label>
-                            <div class="neural-dropzone flex-grow group cursor-pointer relative" @click="triggerFileInput">
-                                <input type="file" ref="fileInput" class="hidden" @change="handleFileUpload" accept=".pdf" />
-                                <template v-if="!selectedFileName">
-                                    <span class="material-symbols-outlined text-4xl text-cyber-teal mb-3 group-hover:scale-110 transition-transform">upload_file</span>
-                                    <div class="text-sm font-semibold text-white mb-1">Inject PDF Data</div>
-                                    <div class="text-[10px] font-mono text-slate-tech uppercase">Drag & Drop or Click to Browse</div>
-                                    <div class="mt-6 text-[9px] font-mono text-cyber-teal bg-cyber-teal/10 px-3 py-1 rounded border border-cyber-teal/20">MAX_PAYLOAD: 128MB</div>
-                                </template>
-                                <template v-else>
-                                    <span class="material-symbols-outlined text-4xl text-emerald-accent mb-3">description</span>
-                                    <div class="text-sm font-semibold text-white mb-1 break-all px-4 text-center">{{ selectedFileName }}</div>
-                                    <div class="text-[10px] font-mono text-emerald-accent uppercase mt-2">READY FOR PARSING</div>
-                                </template>
-                            </div>
+                            <Dropzone 
+                                variant="rectangular"
+                                accept=".pdf"
+                                icon="upload_file"
+                                title="INJECT PDF DATA"
+                                subtitle="Drag & Drop Sequence"
+                                limitText="MAX_PAYLOAD: 128MB"
+                                activeText="READY FOR PARSING"
+                                :file="selectedFile"
+                                @file-selected="onFileSelected"
+                                :pulsing="true"
+                            />
                         </div>
                     </div>
 
-                    <div v-if="activeTab === 'agent'" class="h-full flex flex-col min-h-[400px]">
-                        <div class="flex-grow bg-navy-deep/40 rounded border border-white/5 p-4 mb-4 font-mono text-[11px] text-slate-tech overflow-y-auto custom-scrollbar space-y-3">
+                    <div v-if="activeTab === 'agent'" class="h-full flex flex-col min-h-[400px] relative z-10">
+                        <div
+                            class="flex-grow bg-navy-deep/80 rounded-lg border border-cyber-teal/20 p-4 mb-4 font-mono text-[11px] text-slate-tech overflow-y-auto custom-scrollbar space-y-4 shadow-inner">
                             <div class="flex gap-3">
-                                <div class="w-6 h-6 rounded bg-cyber-teal/20 flex items-center justify-center shrink-0">
-                                    <span class="material-symbols-outlined text-[14px] text-cyber-teal">smart_toy</span>
+                                <div
+                                    class="w-8 h-8 rounded border border-cyber-teal/30 bg-cyber-teal/10 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(13,242,242,0.2)]">
+                                    <span class="material-symbols-outlined text-[16px] text-cyber-teal">smart_toy</span>
                                 </div>
-                                <div class="bg-navy-light/80 p-3 rounded-tr-lg rounded-br-lg rounded-bl-lg text-slate-300">
-                                    <p class="mb-1 text-cyber-teal text-[10px]">NEURAL_AGENT_V1</p>
-                                    <p>Awaiting project specs... Envía un mensaje para comenzar a estructurar la licitación vía diálogo.</p>
+                                <div
+                                    class="bg-navy-light/80 border border-white/5 p-3 rounded-tr-lg rounded-br-lg rounded-bl-lg text-slate-300">
+                                    <p class="mb-1 text-cyber-teal font-bold tracking-widest text-[10px]">
+                                        NEURAL_AGENT_V1</p>
+                                    <p>Awaiting project specs... Envía un mensaje para comenzar a estructurar la
+                                        licitación vía diálogo.</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="relative mt-auto">
+                        <div class="relative mt-auto group">
                             <input type="text" class="input-cyber pr-12 font-mono" placeholder="TYPE_COMMAND_HERE...">
-                            <button class="absolute right-3 top-1/2 -translate-y-1/2 text-cyber-teal hover:text-white transition-colors">
-                                <span class="material-symbols-outlined text-lg">send</span>
+                            <button
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-cyber-teal hover:text-white transition-colors group-focus-within:text-cyber-teal">
+                                <span class="material-symbols-outlined text-xl">send</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="p-8 border-t border-white/10 bg-navy-light/40 flex items-center justify-between shrink-0">
-                    <div class="flex items-center gap-4 text-[10px] font-mono text-slate-tech">
-                        <div class="flex items-center gap-1.5">
-                            <span :class="['w-2 h-2 rounded-full transition-colors', selectedFileName ? 'bg-emerald-accent' : 'bg-slate-600']"></span>
-                            {{ selectedFileName ? 'READY' : 'IDLE' }}
+                <div
+                    class="p-8 border-t border-cyber-teal/20 bg-navy-light/60 flex flex-wrap items-center justify-between relative z-10 shrink-0 gap-4">
+
+                    <div class="flex flex-col gap-1 w-full md:w-auto flex-1 max-w-xs">
+                        <div class="flex items-center gap-4 text-[10px] font-mono text-slate-tech">
+                            <div class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-sm shadow-[0_0_8px_#0df2f2]"
+                                    :class="selectedFileName ? 'bg-cyber-teal' : 'bg-slate-600'"></span>
+                                {{ selectedFileName ? 'PAYLOAD_SECURED' : 'AWAITING_DATA' }}
+                            </div>
+                            <div v-if="isUploading" class="h-3 w-[1px] bg-slate-700"></div>
+                            <div v-if="isUploading" class="flex items-center gap-2 text-cyber-teal">
+                                <span class="material-symbols-outlined text-[12px] animate-spin">sync</span>
+                                UPLOADING_{{ uploadProgress }}%
+                            </div>
                         </div>
-                        <div class="flex items-center gap-1.5" v-if="isUploading">
-                            <span class="w-2 h-2 rounded-full bg-cyber-teal animate-pulse"></span>
-                            UPLOADING...
+                        <div class="w-full h-[2px] bg-navy-deep mt-2 relative overflow-hidden rounded-full">
+                            <div class="absolute inset-y-0 left-0 bg-cyber-teal shadow-[0_0_8px_#0df2f2] transition-all duration-300"
+                                :style="{ width: uploadProgress + '%' }"></div>
                         </div>
                     </div>
-                    <div class="flex gap-4">
-                        <button @click="emit('close')" class="px-6 py-3 rounded text-[11px] font-mono font-bold tracking-widest text-slate-tech hover:text-white transition-colors uppercase">
+
+                    <div class="flex gap-4 w-full md:w-auto">
+                        <button @click="handleClose"
+                            class="px-6 py-3 rounded-none border border-transparent hover:border-red-500/50 text-[11px] font-mono font-bold tracking-widest text-slate-tech hover:text-red-400 hover:bg-red-500/5 transition-all uppercase">
                             Abort_Ingest
                         </button>
-                        <button @click="establishProject" :disabled="isUploading" class="px-8 py-3 bg-cyber-teal rounded text-[11px] font-mono font-bold tracking-widest text-navy-deep hover:bg-white transition-all shadow-lg shadow-cyber-teal/20 uppercase disabled:opacity-50 disabled:cursor-not-allowed">
-                            {{ isUploading ? 'Processing...' : 'Establish_Project' }}
+                        
+                        <button @click="establishProject" :disabled="isUploading || !selectedFileName"
+                            class="relative px-8 py-3 bg-cyber-teal text-black text-[11px] font-mono font-bold tracking-widest uppercase hover:bg-white hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all duration-300 group overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span class="relative z-10">{{ isUploading ? 'UPLOADING...' : 'Establish_Project' }}</span>
+                            <div v-if="!isUploading && selectedFileName"
+                                class="absolute inset-0 bg-white/20 -translate-x-full group-hover:skew-x-12 group-hover:translate-x-full transition-transform duration-700">
+                            </div>
                         </button>
                     </div>
                 </div>
@@ -211,70 +311,3 @@ const handleClose = () => {
         </div>
     </Transition>
 </template>
-
-<style scoped>
-@reference "../../../css/app.css";
-
-/* Estilos Base */
-.glass-panel {
-    @apply bg-navy-light/40 backdrop-blur-xl border border-white/10;
-}
-.input-cyber {
-    @apply w-full bg-navy-deep/60 border border-white/10 rounded-md px-4 py-3 text-sm text-white transition-all outline-none;
-}
-.input-cyber:focus {
-    @apply border-cyber-teal/50 ring-1 ring-cyber-teal/50;
-}
-.neural-dropzone {
-    @apply border-2 border-dashed border-cyber-teal/30 bg-cyber-teal/5 flex flex-col items-center justify-center p-8 rounded-lg transition-all;
-    box-shadow: inset 0 0 20px rgba(13, 242, 242, 0.05);
-}
-.neural-dropzone:hover {
-    @apply border-cyber-teal/60 bg-cyber-teal/10;
-    box-shadow: 0 0 15px rgba(13, 242, 242, 0.2);
-}
-
-/* Scrollbar */
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: rgba(10, 25, 47, 0.5); }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(136, 146, 176, 0.2); border-radius: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(13, 242, 242, 0.4); }
-
-/* --- ANIMACIÓN NEURAL --- */
-.neural-enter-active,
-.neural-leave-active {
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Animamos el backdrop (que ahora es un div hijo con clase .absolute) */
-.neural-enter-active .absolute,
-.neural-leave-active .absolute {
-    transition: opacity 0.3s ease;
-}
-
-/* Animamos el panel (que ahora es un div hijo con clase .glass-panel) */
-.neural-enter-active .glass-panel,
-.neural-leave-active .glass-panel {
-    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* Estados Inicial y Final */
-.neural-enter-from,
-.neural-leave-to {
-    opacity: 0;
-}
-
-/* Backdrop Fade */
-.neural-enter-from .absolute,
-.neural-leave-to .absolute {
-    opacity: 0;
-}
-
-/* Panel Pop & Blur */
-.neural-enter-from .glass-panel,
-.neural-leave-to .glass-panel {
-    opacity: 0;
-    transform: scale(0.95) translateY(10px);
-    filter: blur(8px);
-}
-</style>

@@ -20,7 +20,6 @@ const activeComponent = computed(() => views[currentView.value]);
 onMounted(async () => {
     try {
         const response = await api.get<ApiResponse<Project[]>>('/projects');
-        console.log(response.data.content)
         projects.value = response.data.content;
         // projects.value = projects || [];
     } catch (error) {
@@ -40,18 +39,9 @@ onMounted(async () => {
             class="flex-none px-6 py-4 border-b border-slate-800/80 bg-[#0a192f]/90 backdrop-blur-md z-30 flex flex-wrap items-center justify-between gap-4">
 
             <div class="flex flex-col">
-                <div
-                    class="flex items-center gap-2 text-primary/60 text-[10px] font-mono uppercase tracking-[0.2em] mb-1">
-                    <span class="relative flex h-2 w-2">
-                        <span
-                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                    </span>
-                    Live System Status: Optimal
-                </div>
                 <h1 class="text-2xl font-black text-white uppercase tracking-tight">Active Operations</h1>
                 <p class="text-slate-400 text-xs font-mono">
-                    {{ projects.length }} NODES DETECTED // TERMINAL V4.2
+                    {{ projects.length }} PROJECTS DETECTED
                 </p>
             </div>
 

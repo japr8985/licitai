@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 const props = defineProps<{summary: String}>()
+const text = computed(() => {
+    return props.summary?.split('\n');
+})
 </script>
 
 <template>
@@ -18,7 +23,12 @@ const props = defineProps<{summary: String}>()
         <div
             class="p-6 font-mono text-sm leading-relaxed text-primary/80 h-[320px] overflow-y-auto scanline custom-scrollbar">
             <p class="mb-4 text-white font-bold">&gt; INITIALIZING PROJECT HEURISTICS...</p>
-            <p class="mb-4">&gt; Analysis complete for Minister of Modernization hybrid cloud tender.
+
+            <p class="mb-4" v-for="(t, i) in text" :key="i">
+                &gt; {{ t }}
+            </p>
+            <p class="animate-pulse">_</p>
+            <!-- <p class="mb-4">&gt; Analysis complete for Minister of Modernization hybrid cloud tender.
                 The financial proposition is strong with a profit margin estimated at 24% despite
                 stringent SLA requirements.</p>
             <p class="mb-4 text-amber-400">&gt; CRITICAL NOTICE: The timeline for Phase 1 (Cloud
@@ -29,7 +39,7 @@ const props = defineProps<{summary: String}>()
                 weight.</p>
             <p class="mb-4">&gt; RECOMMENDATION: Proceed with bid if penalty clauses can be capped at
                 10% of total contract value. Legal team must review Section 12 on 'Force Majeure'.</p>
-            <p class="animate-pulse">_</p>
+            <p class="animate-pulse">_</p> -->
         </div>
     </div>
 </template>

@@ -1,97 +1,141 @@
+
 <template>
     <div class="h-full glass-card rounded-xl p-6 relative overflow-hidden">
         <div class="absolute top-0 right-0 p-4 font-mono text-[10px] text-primary/20 pointer-events-none">
-            PLAN_REV: 0.9.4a
+            PLAN_REV: 0.9.4b
         </div>
         <div class="flex items-center gap-3 mb-10 border-b border-white/10 pb-4">
             <span class="material-symbols-outlined text-amber-500">route</span>
-            <h3 class="text-white font-bold text-lg uppercase tracking-tight">AI Suggested Roadmap /
-                Sprints</h3>
+            <h3 class="text-white font-bold text-lg uppercase tracking-tight">AI Suggested Roadmap / Sprints</h3>
         </div>
-        <div class="relative pl-8 space-y-10">
+        
+        <div v-if="!enrichedPhases.length" class="text-center py-10 opacity-50">
+            <span class="material-symbols-outlined text-4xl mb-2">pending</span>
+            <p class="text-xs font-mono uppercase tracking-widest">Awaiting Neural Analysis...</p>
+        </div>
+
+        <div v-else class="relative pl-8 space-y-10">
             <div class="absolute left-[11px] top-2 bottom-2 w-px timeline-line"></div>
-            <div class="relative flex flex-col md:flex-row md:items-start justify-between gap-4">
-                <div
-                    class="absolute -left-10 mt-1 size-6 bg-primary rounded border border-background-dark flex items-center justify-center z-10 shadow-[0_0_10px_rgba(13,242,242,0.5)]">
-                    <span class="material-symbols-outlined text-slate-900 text-xs font-black">check</span>
+            
+            <div v-for="phase in enrichedPhases" :key="phase.phase" 
+                 class="relative flex flex-col md:flex-row md:items-start justify-between gap-4 transition-all duration-300"
+                 :class="{ 'opacity-40': phase.status === 'pending' }">
+                 
+                <div :class="[
+                        'absolute -left-10 mt-1 size-6 rounded border flex items-center justify-center z-10 transition-all',
+                        phase.status === 'completed' ? 'bg-primary border-background-dark shadow-[0_0_10px_rgba(13,242,242,0.5)]' : '',
+                        phase.status === 'in_progress' ? 'bg-slate-900 border-primary shadow-[0_0_10px_rgba(13,242,242,0.2)]' : '',
+                        phase.status === 'pending' ? 'bg-slate-900 border-white/10' : ''
+                    ]">
+                    <span v-if="phase.status === 'completed'" class="material-symbols-outlined text-slate-900 text-xs font-black">check</span>
+                    <span v-else-if="phase.status === 'in_progress'" class="material-symbols-outlined text-primary text-xs font-black animate-spin-slow">autorenew</span>
+                    <span v-else class="material-symbols-outlined text-white/20 text-xs font-black">lock</span>
                 </div>
+
                 <div class="flex-1">
                     <div class="flex items-center gap-3 mb-1">
-                        <span class="text-primary font-mono text-[10px] uppercase font-bold tracking-widest">Phase
-                            1</span>
-                        <h4 class="text-white font-bold text-base uppercase">Inception &amp; Discovery
+                        <span :class="[
+                                'font-mono text-[10px] uppercase font-bold tracking-widest',
+                                phase.status === 'pending' ? 'text-slate-600' : 'text-primary'
+                            ]">
+                            Phase {{ phase.phase }}
+                        </span>
+                        <h4 :class="[
+                                'font-bold text-base uppercase',
+                                phase.status === 'pending' ? 'text-slate-500' : 'text-white'
+                            ]">
+                            {{ phase.title }}
                         </h4>
                     </div>
-                    <p class="text-slate-400 text-xs font-mono">Infrastructure audit, stakeholder
-                        mapping, and final migration architecture sign-off.</p>
+                    <p :class="[
+                            'text-xs font-mono',
+                            phase.status === 'pending' ? 'text-slate-600 italic' : 'text-slate-400'
+                        ]">
+                        {{ phase.description }}
+                    </p>
+                    
+                    <div v-if="phase.required_skills?.length && phase.status !== 'pending'" class="flex flex-wrap gap-2 mt-3">
+                        <span v-for="skill in phase.required_skills" :key="skill" 
+                              class="px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] text-slate-300 font-mono uppercase">
+                            {{ skill }}
+                        </span>
+                    </div>
                 </div>
+
                 <div class="flex items-center gap-4 min-w-[200px] justify-end">
                     <div class="px-3 py-1 bg-slate-900 border border-white/10 rounded flex items-center gap-2">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase">Sprint 1-2</span>
+                        <span :class="['text-[10px] font-bold uppercase', phase.status === 'pending' ? 'text-slate-600' : 'text-slate-500']">
+                            {{ phase.sprintLabel }}
+                        </span>
                         <div class="h-3 w-px bg-white/10"></div>
-                        <span class="text-[10px] text-primary font-bold">120 HOURS</span>
+                        <span :class="['text-[10px] font-bold', phase.status === 'pending' ? 'text-slate-600' : 'text-primary']">
+                            {{ phase.estimatedHours }} HRS
+                        </span>
                     </div>
+                    
                     <div class="w-24 h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-primary w-full"></div>
+                        <div :class="[
+                                'h-full transition-all duration-1000',
+                                phase.status === 'completed' ? 'bg-primary w-full' : '',
+                                phase.status === 'in_progress' ? 'bg-primary w-[35%] animate-pulse' : '',
+                                phase.status === 'pending' ? 'w-0' : ''
+                            ]">
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="relative flex flex-col md:flex-row md:items-start justify-between gap-4">
-                <div
-                    class="absolute -left-10 mt-1 size-6 bg-slate-900 border border-white/30 rounded flex items-center justify-center z-10">
-                    <span class="material-symbols-outlined text-white/50 text-xs font-black">hourglass_top</span>
-                </div>
-                <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-1">
-                        <span class="text-slate-400 font-mono text-[10px] uppercase font-bold tracking-widest">Phase
-                            2</span>
-                        <h4 class="text-white font-bold text-base uppercase">Core Infrastructure Setup
-                        </h4>
-                    </div>
-                    <p class="text-slate-400 text-xs font-mono">Deployment of landing zones, hybrid
-                        connectivity, and baseline security controls.</p>
-                </div>
-                <div class="flex items-center gap-4 min-w-[200px] justify-end">
-                    <div class="px-3 py-1 bg-slate-900 border border-white/10 rounded flex items-center gap-2">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase">Sprint 3-5</span>
-                        <div class="h-3 w-px bg-white/10"></div>
-                        <span class="text-[10px] text-primary font-bold">280 HOURS</span>
-                    </div>
-                    <div class="w-24 h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-primary/30 w-[15%]"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="relative flex flex-col md:flex-row md:items-start justify-between gap-4">
-                <div
-                    class="absolute -left-10 mt-1 size-6 bg-slate-900 border border-white/10 rounded flex items-center justify-center z-10">
-                    <span class="material-symbols-outlined text-white/20 text-xs font-black">lock_open</span>
-                </div>
-                <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-1">
-                        <span class="text-slate-600 font-mono text-[10px] uppercase font-bold tracking-widest">Phase
-                            3</span>
-                        <h4 class="text-slate-500 font-bold text-base uppercase">Application Migration
-                        </h4>
-                    </div>
-                    <p class="text-slate-600 text-xs font-mono italic">Workload prioritization and live
-                        traffic transition to hybrid cluster.</p>
-                </div>
-                <div class="flex items-center gap-4 min-w-[200px] justify-end opacity-40">
-                    <div class="px-3 py-1 bg-slate-900 border border-white/10 rounded flex items-center gap-2">
-                        <span class="text-[10px] text-slate-600 font-bold uppercase">Sprint 6-12</span>
-                        <div class="h-3 w-px bg-white/10"></div>
-                        <span class="text-[10px] text-slate-600 font-bold">650 HOURS</span>
-                    </div>
-                    <div class="w-24 h-1 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full bg-primary/10 w-0"></div>
-                    </div>
-                </div>
-            </div>
+            
         </div>
     </div>
 </template>
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { Phase } from '@tenant/types/api';
+import { computed } from 'vue';
+
+const props = defineProps<{
+    roadmap: Phase[]
+}>();
+
+// Constante de la empresa: 1 Sprint = 14 días
+const SPRINT_LENGTH_DAYS = 14; 
+const HOURS_PER_DAY = 8; // Para convertir los días a horas hombre (si quieres mantener la estética de "120 HOURS")
+
+// Creamos un computed que enriquezca los datos de la IA con la lógica de Sprints
+const enrichedPhases = computed(() => {
+    let currentSprintStart = 1;
+
+    return (props.roadmap || []).map((phase, index) => {
+        // ¿Cuántos sprints (de 14 días) caben en esta fase? Redondeamos hacia arriba.
+        // Ej: Fase de 30 días / 14 = 2.14 -> 3 Sprints requeridos.
+        const sprintsNeeded = Math.ceil(phase.duration_days / SPRINT_LENGTH_DAYS);
+        
+        // Calculamos el rango de Sprints. Ej: "Sprint 1-3"
+        const sprintEnd = currentSprintStart + sprintsNeeded - 1;
+        const sprintLabel = sprintsNeeded === 1 
+            ? `Sprint ${currentSprintStart}` 
+            : `Sprint ${currentSprintStart}-${sprintEnd}`;
+
+        // Calculamos las horas estimadas (opcional, para tu diseño)
+        const estimatedHours = phase.duration_days * HOURS_PER_DAY;
+
+        // Simulador de estado (Solo para visualización hasta que tengas lógica de estado real)
+        // Asumiremos que la Fase 1 está "Completed", la Fase 2 "In Progress" y el resto "Pending"
+        let status = 'pending';
+        if (index === 0) status = 'completed';
+        if (index === 1) status = 'in_progress';
+
+        // Actualizamos el contador global de sprints para la siguiente fase
+        currentSprintStart = sprintEnd + 1;
+
+        return {
+            ...phase,
+            sprintLabel,
+            estimatedHours,
+            status // 'completed', 'in_progress', 'pending'
+        };
+    });
+});
+</script>
 <style>
 .timeline-line {
     /* Crea una línea de 1px de ancho */

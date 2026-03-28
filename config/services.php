@@ -35,7 +35,11 @@ return [
         ],
     ],
     'n8n' => [
+        // analisis de proyecto
         'webhook_url' => env('N8N_WEBHOOK_URL'),
+        // analisis de cv
+        'webhook_url_cv' => env('N8N_WEBHOOK_CV_ANALYZE'),
+        // token para n8n
         'webhook_secret' => env('N8N_WEBHOOK_SECRET')
     ]
 

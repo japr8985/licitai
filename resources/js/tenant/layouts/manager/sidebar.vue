@@ -8,12 +8,34 @@ const route = useRoute();
 
 const menuItems = [
   { name: 'Dashboard', route: 'manager.dashboard', icon: 'grid_view' },
+  { name: 'Projects', route: 'manager.projects.index', icon: 'hub' },
+  { name: 'Employees', route: 'manager.employees.index', icon: 'group' },
 //   { name: 'Workbench', route: 'projects', icon: 'analytics' }, // Asumo ruta 'projects'
 //   { name: 'Neural Chat', route: 'chat', icon: 'forum' },
 //   { name: 'Settings', route: 'settings', icon: 'settings' },
 ];
 
 const isCollapsed = computed(() => ui.sidebarCollapsed);
+
+// 🧠 LOGICA INFALIBLE PARA EL ESTADO ACTIVO
+const checkIsActive = (itemRoute: string) => {
+  if (!route.name) return false;
+  
+  const currentRouteName = route.name.toString();
+  
+  // Para el Dashboard: Exigimos coincidencia EXACTA
+  if (itemRoute === 'manager.dashboard') {
+    return currentRouteName === 'manager.dashboard';
+  }
+  
+  // Para Proyectos: Coincidencia PARCIAL 
+  // (Así se mantiene iluminado en el index, en el show, edit, etc.)
+  if (itemRoute === 'manager.projects.index') {
+    return currentRouteName.startsWith('manager.projects');
+  }
+
+  return currentRouteName === itemRoute;
+};
 </script>
 
 <template>
@@ -40,19 +62,18 @@ const isCollapsed = computed(() => ui.sidebarCollapsed);
         v-for="item in menuItems" 
         :key="item.name"
         :to="{ name: item.route }" 
-        v-slot="{ isActive }"
         class="block"
       >
           <div :class="[
               'flex items-center rounded-lg transition-all duration-200 group relative',
               isCollapsed ? 'justify-center p-3' : 'px-4 py-3',
-              isActive 
+              checkIsActive(item.route)
                 ? 'bg-cyber-teal/10 border-l-2 border-cyber-teal text-white' 
                 : 'text-slate-tech hover:bg-white/5 hover:text-cyber-teal'
             ]">
               <span class="material-symbols-outlined">{{ item.icon }}</span>
               <span v-if="!isCollapsed" class="ml-3 text-xs font-medium">{{ item.name }}</span>
-            </div>
+          </div>
       </router-link>
 
     </nav>

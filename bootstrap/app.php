@@ -13,8 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens([
-            'app/*/api/projects/*/analysis',
-            // '*/api/webhook/*',
+            'app/*/api/projects/*',
+            'app/*/api/employees/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

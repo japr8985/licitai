@@ -41,7 +41,7 @@ class SendProjectToN8n implements ShouldQueue
         // 2. Ahora que el contexto es el correcto, buscamos el modelo
         $project = Project::find($this->projectId);
         
-        $downloadUrl = $fileService->generateTemporaryUrl($project->file_path, 30);
+        $downloadUrl = $fileService->generateTemporaryUrl($project->file_path, 120);
 
         // 2. Preparamos el Payload con contexto industrial
         $payload = [

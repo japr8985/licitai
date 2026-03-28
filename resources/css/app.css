@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* 1. EL TEMA GLOBAL */
 @theme {
   --color-primary: #0df2f2;
   --color-navy-deep: #0a192f;
@@ -8,48 +9,111 @@
   --color-cyber-teal: #0df2f2;
   --color-emerald-accent: #10b981;
   
-  
+  --animate-glitch: glitch 3s infinite;
+  --animate-scanline: scanline 8s linear infinite;
+  --animate-pulse-glow: pulseGlow 2s ease-in-out infinite;
+
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(13, 242, 242, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(13, 242, 242, 0.5); }
+  }
+
+  @keyframes glitch {
+    0% { transform: translate(0) }
+    2% { transform: translate(-2px, 1px) }
+    4% { transform: translate(2px, -1px) }
+    6% { transform: translate(0) }
+    100% { transform: translate(0) }
+  }
+
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
 }
-.custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-    }
 
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.1);
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(13, 242, 242, 0.3);
-        border-radius: 10px;
-    }
-
-/* LOS EFECTOS DE STITCH (CALCADOS) */
+/* 2. UTILIDADES SIMPLES (Sin estados complejos) */
 @utility glass-panel {
-  background: rgba(16, 34, 34, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(13, 242, 242, 0.1);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  @apply bg-[#112240]/80 backdrop-blur-xl border border-[#0df2f2]/20 shadow-[0_0_30px_rgba(13,242,242,0.1)];
 }
 
-@utility tech-grid {
+@utility tech-grid-bg {
   background-image: 
-    linear-gradient(to right, #1e293b 1px, transparent 1px), 
-    linear-gradient(to bottom, #1e293b 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: radial-gradient(circle at 50% 50%, black, transparent 80%);
+    linear-gradient(rgba(13,242,242,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13,242,242,0.05) 1px, transparent 1px);
+  background-size: 30px 30px;
 }
 
 @utility scanline-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(to bottom, transparent, rgba(13, 242, 242, 0.05), transparent);
-  animation: scanline 8s linear infinite;
+  background-size: 100% 4px;
   pointer-events: none;
   z-index: 1;
 }
 
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+/* 3. COMPONENTES COMPLEJOS (Usamos CSS tradicional para permitir hover y focus) */
+@layer components {
+  /* Dropzones */
+  .neural-dropzone {
+    @apply border border-dashed border-cyber-teal/40 bg-cyber-teal/5 flex flex-col items-center justify-center transition-all relative overflow-hidden rounded-xl;
+  }
+  .neural-dropzone::before {
+    content: '';
+    @apply absolute inset-0 bg-cyber-teal/10 translate-y-full transition-transform duration-500;
+  }
+  .neural-dropzone:hover::before {
+    @apply translate-y-0;
+  }
+  .neural-dropzone:hover {
+    @apply border-cyber-teal shadow-[0_0_25px_rgba(13,242,242,0.2)];
+  }
+
+  /* Inputs */
+  .input-cyber {
+    @apply w-full bg-[#0a192f]/50 border-0 border-b-2 border-[#0df2f2]/30 text-white placeholder-slate-500 px-4 py-3 transition-all duration-300 outline-none;
+  }
+  .input-cyber:focus {
+    @apply border-[#0df2f2] bg-[#112240]/80 shadow-[0_4px_15px_-3px_rgba(13,242,242,0.1)];
+  }
+
+  /* Esquinas Decorativas Externas */
+  .cyber-corner {
+    @apply absolute w-5 h-5 border-2 border-[#0df2f2] transition-all duration-300 pointer-events-none;
+  }
+  .cyber-corner-tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+  .cyber-corner-tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+  .cyber-corner-bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+  .cyber-corner-br { bottom: 0; right: 0; border-left: none; border-top: none; }
+}
+
+/* 4. CSS GLOBAL PURO */
+
+.group:hover .cyber-corner {
+  width: 30px;
+  height: 30px;
+  box-shadow: 0 0 10px rgba(13,242,242,0.5); 
+}
+
+.cursor-blink::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(13,242,242,0.2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(13,242,242,0.5); }
+/*  */
+.error-slide-enter-active,
+.error-slide-leave-active {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.error-slide-enter-from,
+.error-slide-leave-to {
+    opacity: 0;
+    transform: translateY(-5px);
 }
