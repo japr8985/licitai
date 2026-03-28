@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
 import api from '@tenant/api/axios';
-import { ChunkUploader } from '@tenant/services/ChunkUploader'; // <-- Importamos tu servicio
+import { ChunkUploader } from '@tenant/services/ChunkUploader'; 
 import { useUIStore } from '@tenant/store/ui';
-import { ApiResponse, ValidationErrors } from '@tenant/types/api';
+import { ValidationErrors } from '@tenant/types/api';
 import Dropzone from '../ui/Dropzone.vue';
 import CyberModal from '../ui/CyberModal.vue';
 import InputField from '../ui/InputField.vue';
@@ -11,9 +11,7 @@ import InputField from '../ui/InputField.vue';
 const emit = defineEmits(['specialistInjected']);
 
 const isOpen = ref(false);
-const openModal = () => { isOpen.value = true; };
 
-// --- ESTADO DEL FORMULARIO ---
 const form = reactive({
     name: '',
     email: '',
@@ -21,23 +19,15 @@ const form = reactive({
     department: ''
 });
 const ui = useUIStore();
-// --- ESTADO DE ARCHIVOS ---
+
 const avatarFile = ref<File | null>(null);
 const avatarPreview = ref<string | null>(null);
 const cvFile = ref<File | null>(null);
 
-const avatarInput = ref<HTMLInputElement | null>(null);
-const cvInput = ref<HTMLInputElement | null>(null);
-
-// Nuevas variables para el control de subida
 const isSubmitting = ref(false);
 const currentUploadProcess = ref('');
 const uploadProgress = ref(0);
 const currentUploader = ref<ChunkUploader | null>(null);
-
-// --- HANDLERS DE ARCHIVOS ---
-const triggerAvatarInput = () => avatarInput.value?.click();
-const triggerCvInput = () => cvInput.value?.click();
 
 const handleAvatarUpload = (file: File) => {
     if (!file) return;
@@ -63,10 +53,6 @@ const systemStatus = computed(() => {
 const formErrors = ref<ValidationErrors>({})
 // --- SUBMIT (AHORA CON CHUNKS) ---
 const registerOperative = async () => {
-    // if (!form.name || !form.email || !form.job_title) {
-    //     alert("CRITICAL ERROR: Core identity fields missing.");
-    //     return;
-    // }
 
     try {
         isSubmitting.value = true;
@@ -97,12 +83,10 @@ const registerOperative = async () => {
             cvData = await cvUploader.start();
         }
 
-        // 3. Finalizar Ingesta
         currentUploadProcess.value = 'INITIALIZING_OPERATIVE';
         uploadProgress.value = 100;
         currentUploader.value = null;
 
-        // Ya no usamos FormData, enviamos un JSON limpio con los UUIDs
         const finalPayload = {
             name: form.name,
             email: form.email,
@@ -119,15 +103,12 @@ const registerOperative = async () => {
                 total_chunks: cvData?.total_chunks
             }
         };
-
-        // NOTA: Ajusta esta ruta a tu endpoint de finalización en el backend
         const response = await api.post('/employees/finalize', finalPayload);
 
         emit('specialistInjected', response.data.content);
         handleClose();
 
     } catch (error: any) {
-        // console.error("System Failure:", error);
         // alert("SYSTEM FAILURE: Unable to register operative. Link aborted.");
         if (error?.status) {
             if (error.status === 422) {
@@ -225,120 +206,3 @@ const handleClose = () => {
         </template>
     </CyberModal>
 </template>
-
-<style scoped>
-@reference "../../../../css/app.css";
-
-/* Base Inputs */
-.input-cyber {
-    @apply w-full bg-[#0a192f]/50 border-0 border-b-2 border-[#0df2f2]/30 text-white placeholder-slate-500 px-4 py-3 transition-all duration-300 outline-none;
-}
-
-.input-cyber:focus {
-    @apply border-[#0df2f2] bg-[#112240]/80 shadow-[0_4px_15px_-3px_rgba(13,242,242,0.1)];
-}
-
-/* Decoraciones y Backgrounds */
-.cyber-grid {
-    background-image:
-        linear-gradient(rgba(13, 242, 242, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(13, 242, 242, 0.05) 1px, transparent 1px);
-}
-
-.scanline-overlay {
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.2));
-    background-size: 100% 4px;
-}
-
-/* Esquinas Cyborg */
-.cyber-corner {
-    @apply absolute w-5 h-5 border-2 border-[#0df2f2] transition-all duration-300 pointer-events-none;
-}
-
-.cyber-corner-tl {
-    top: 0;
-    left: 0;
-    border-right: none;
-    border-bottom: none;
-}
-
-.cyber-corner-tr {
-    top: 0;
-    right: 0;
-    border-left: none;
-    border-bottom: none;
-}
-
-.cyber-corner-bl {
-    bottom: 0;
-    left: 0;
-    border-right: none;
-    border-top: none;
-}
-
-.cyber-corner-br {
-    bottom: 0;
-    right: 0;
-    border-left: none;
-    border-top: none;
-}
-
-.glass-panel:hover .cyber-corner {
-    width: 30px;
-    height: 30px;
-    box-shadow: 0 0 10px rgba(13, 242, 242, 0.5);
-}
-
-/* Animaciones */
-.cursor-blink::after {
-    content: '_';
-    animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-    50% {
-        opacity: 0;
-    }
-}
-
-/* --- VUE TRANSITION: HOLO-MATERIALIZE --- */
-.holo-enter-active .glass-panel {
-    animation: holoMaterialize 0.35s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
-}
-
-.holo-leave-active .glass-panel {
-    transition: all 0.15s ease-in;
-    opacity: 0;
-    transform: scale(0.95) translateY(10px);
-}
-
-.holo-enter-active .absolute,
-.holo-leave-active .absolute {
-    transition: opacity 0.2s ease-out;
-}
-
-.holo-enter-from .absolute,
-.holo-leave-to .absolute {
-    opacity: 0;
-}
-
-@keyframes holoMaterialize {
-    0% {
-        opacity: 0;
-        transform: scale(0.9) translateY(20px);
-        filter: blur(10px) brightness(3);
-    }
-
-    60% {
-        opacity: 1;
-        filter: blur(2px) brightness(1.5);
-        transform: scale(1.02);
-    }
-
-    100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-        filter: blur(0) brightness(1);
-    }
-}
-</style>
