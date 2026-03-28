@@ -132,9 +132,7 @@ const registerOperative = async () => {
         if (error?.status) {
             if (error.status === 422) {
                 const errorData = error.data
-                // const errorData = error.response?.data as ApiResponse<ValidationErrors>;
-
-                // formErrors.value = errorData.content;
+                formErrors.value = errorData.errors;
                 ui.notify('error', errorData.message)
                 return;
             }
@@ -166,7 +164,7 @@ const handleClose = () => {
 };
 </script>
 <template>
-    <CyberModal title="INITIALIZE_SPECIALIST" subtitle="LicitAI Secure Terminal v4.0" status-text="status-text">
+    <CyberModal title="INITIALIZE_SPECIALIST" subtitle="LicitAI Secure Terminal v4.0" status-text="status-text" max-width="6xl">
         <template #trigger="{ open }">
             <button @click="open"
                 class="w-full sm:w-auto px-6 py-2.5 bg-[#0df2f2] text-[#0a192f] font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(13,242,242,0.3)] hover:shadow-[0_0_25px_rgba(13,242,242,0.6)] transition-all duration-300 transform hover:-translate-y-1 font-mono text-xs border-2 border-transparent hover:border-white">
@@ -177,13 +175,13 @@ const handleClose = () => {
             <div class="flex-1 flex flex-col gap-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <InputField v-model="form.name" label="Full Legal Name" label-icon="badge"
-                        placeholder="Enter operative name" />
+                        placeholder="Enter operative name" :error="formErrors.name"/>
                     <InputField v-model="form.email" label="Email" label-icon="email"
-                        placeholder="Secure frequency email" />
+                        placeholder="Secure frequency email" :error="formErrors.email"/>
                     <InputField v-model="form.job_title" label="Designation (Title)" label-icon="military_tech"
-                        placeholder="e.g. Netrunner" />
+                        placeholder="e.g. Netrunner" :error="formErrors.job_title"/>
                     <InputField v-model="form.department" label="Sector (Department)" label-icon="location_city"
-                        placeholder="e.g. Developer" />
+                        placeholder="e.g. Developer" :error="formErrors.department"/>
                 </div>
                 
             </div>
@@ -211,7 +209,8 @@ const handleClose = () => {
                     </span>
                 </div>
             </div>
-            <button @click="close" type="button"
+            <div class="flex items-right gap-3">
+                <button @click="close" type="button"
                 class="flex-1 md:flex-none px-6 py-3 rounded text-slate-300 font-mono text-[11px] border border-transparent hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all uppercase tracking-widest">
                 Abort_Sequence
             </button>
@@ -222,181 +221,9 @@ const handleClose = () => {
                     {{ isSubmitting ? 'INITIALIZING...' : 'Register_Operative' }}
                 </span>
             </button>
+            </div>
         </template>
     </CyberModal>
-    <hr>
-    <button @click="openModal"
-        class="w-full sm:w-auto px-6 py-2.5 bg-[#0df2f2] text-[#0a192f] font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(13,242,242,0.3)] hover:shadow-[0_0_25px_rgba(13,242,242,0.6)] transition-all duration-300 transform hover:-translate-y-1 font-mono text-xs border-2 border-transparent hover:border-white">
-        Inject Specialist
-    </button>
-
-    <Teleport to="body">
-        <Transition name="holo">
-            <div v-if="isOpen"
-                class="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 overflow-hidden font-display perspective-[1000px]">
-
-                <div class="absolute inset-0 bg-[#0a192f]/80 backdrop-blur-sm z-0" @click="handleClose"></div>
-                <div class="absolute inset-0 bg-cyber-grid bg-[size:40px_40px] opacity-20 pointer-events-none z-0">
-                </div>
-                <div class="absolute inset-0 scanline-overlay opacity-10 pointer-events-none z-0"></div>
-
-                <div class="relative z-10 w-full max-w-5xl glass-panel group">
-                    <div class="cyber-corner cyber-corner-tl rounded-tl-xl"></div>
-                    <div class="cyber-corner cyber-corner-tr rounded-tr-xl"></div>
-                    <div class="cyber-corner cyber-corner-bl rounded-bl-xl"></div>
-                    <div class="cyber-corner cyber-corner-br rounded-br-xl"></div>
-
-                    <div
-                        class="p-8 md:p-10 relative overflow-hidden rounded-lg bg-[#112240]/90 backdrop-blur-xl border border-[#0df2f2]/20 shadow-[0_0_50px_rgba(13,242,242,0.1)]">
-
-                        <header
-                            class="mb-8 border-b border-[#0df2f2]/20 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                            <div>
-                                <div class="flex items-center gap-2 mb-2">
-                                    <span class="material-symbols-outlined text-[#0df2f2] text-xl">terminal</span>
-                                    <span class="text-[#0df2f2]/70 font-mono text-xs tracking-widest uppercase">LicitAI
-                                        Secure Terminal v4.0</span>
-                                </div>
-                                <h1 class="text-white text-3xl md:text-4xl font-bold tracking-tight mb-1 uppercase">
-                                    INITIALIZE_SPECIALIST</h1>
-                                <p class="text-[#0df2f2]/60 font-mono text-sm tracking-wide cursor-blink">Awaiting
-                                    Input...
-                                </p>
-                            </div>
-                            <div
-                                class="flex items-center gap-3 bg-[#1d3456]/50 px-4 py-2 rounded border border-[#0df2f2]/10">
-                                <div
-                                    class="h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]">
-                                </div>
-                                <span class="text-xs font-mono text-slate-300">SECURE_CONNECTION_ESTABLISHED</span>
-                            </div>
-                        </header>
-
-                        <form @submit.prevent="registerOperative" class="flex flex-col lg:flex-row gap-10">
-
-                            <div class="flex-1 flex flex-col gap-6">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div class="space-y-2">
-                                        <label
-                                            class="text-[#0df2f2]/80 text-[10px] font-mono uppercase tracking-wider flex items-center gap-2">
-                                            <span class="material-symbols-outlined text-sm">badge</span> Full Legal Name
-                                        </label>
-                                        <input v-model.lazy="form.name" required class="input-cyber"
-                                            placeholder="Enter operative name" type="text" />
-                                    </div>
-                                    <div class="space-y-2">
-                                        <label
-                                            class="text-[#0df2f2]/80 text-[10px] font-mono uppercase tracking-wider flex items-center gap-2">
-                                            <span class="material-symbols-outlined text-sm">cell_tower</span> Comms Link
-                                            (Email)
-                                        </label>
-                                        <input v-model.lazy="form.email" required class="input-cyber"
-                                            placeholder="Secure frequency ID" type="email" />
-                                    </div>
-                                    <div class="space-y-2">
-                                        <label
-                                            class="text-[#0df2f2]/80 text-[10px] font-mono uppercase tracking-wider flex items-center gap-2">
-                                            <span class="material-symbols-outlined text-sm">military_tech</span>
-                                            Designation
-                                            (Title)
-                                        </label>
-                                        <input v-model.lazy="form.job_title" required class="input-cyber"
-                                            placeholder="e.g. Netrunner" type="text" />
-                                    </div>
-                                    <div class="space-y-2">
-                                        <label
-                                            class="text-[#0df2f2]/80 text-[10px] font-mono uppercase tracking-wider flex items-center gap-2">
-                                            <span class="material-symbols-outlined text-sm">location_city</span> Sector
-                                            (Department)
-                                        </label>
-                                        <input v-model.lazy="form.department" class="input-cyber"
-                                            placeholder="e.g. Neo-Tokyo" type="text" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="w-full lg:w-[350px] shrink-0 flex flex-col gap-6">
-
-                                <div class="relative group/dropzone cursor-pointer" @click="triggerAvatarInput">
-                                    <input type="file" ref="avatarInput" @change="handleAvatarUpload" accept="image/*"
-                                        class="hidden" />
-                                    <div
-                                        class="absolute inset-0 bg-[#0df2f2]/5 rounded-xl -skew-x-2 translate-x-2 translate-y-2 opacity-0 group-hover/dropzone:opacity-100 transition-opacity">
-                                    </div>
-                                    <div
-                                        class="relative flex items-center gap-4 bg-[#112240]/60 border border-dashed border-[#0df2f2]/40 rounded-xl p-5 hover:bg-[#112240] hover:border-[#0df2f2] transition-all">
-                                        <div
-                                            class="h-16 w-16 rounded-full border-2 border-[#0df2f2]/30 flex items-center justify-center bg-[#0a192f] shadow-[0_0_15px_rgba(13,242,242,0.1)] overflow-hidden">
-                                            <img v-if="avatarPreview" :src="avatarPreview"
-                                                class="w-full h-full object-cover" />
-                                            <span v-else
-                                                class="material-symbols-outlined text-[#0df2f2] text-2xl">face_5</span>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="text-white font-bold text-sm tracking-wide">Biometric
-                                                Profile</span>
-                                            <span class="text-[#0df2f2]/60 text-[10px] font-mono mt-1">{{ avatarFile ?
-                                                avatarFile.name : 'Click to scan face' }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="relative group/dropzone cursor-pointer" @click="triggerCvInput">
-                                    <input type="file" ref="cvInput" @change="handleCvUpload" accept=".pdf"
-                                        class="hidden" />
-                                    <div
-                                        class="absolute inset-0 bg-[#0df2f2]/5 rounded-xl -skew-x-1 translate-x-2 translate-y-2 opacity-0 group-hover/dropzone:opacity-100 transition-opacity">
-                                    </div>
-                                    <div
-                                        class="relative flex flex-col items-center justify-center bg-[#112240]/60 border border-dashed border-[#0df2f2]/40 rounded-xl p-6 hover:bg-[#112240] hover:border-[#0df2f2] transition-all min-h-[140px]">
-                                        <span class="material-symbols-outlined text-4xl mb-3 transition-colors"
-                                            :class="cvFile ? 'text-[#10b981]' : 'text-[#0df2f2]/50 group-hover/dropzone:text-[#0df2f2]'">
-                                            {{ cvFile ? 'task' : 'memory' }}
-                                        </span>
-                                        <span class="text-white font-bold text-sm tracking-wide">Neural Payload
-                                            (CV)</span>
-                                        <span
-                                            class="text-[#0df2f2]/60 text-xs font-mono mt-1 text-center max-w-[200px] break-all">
-                                            {{ cvFile ? cvFile.name : 'Upload encrypted resume packet' }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-
-                        <footer
-                            class="mt-10 pt-6 border-t border-[#0df2f2]/20 flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined text-amber-400 text-lg"
-                                    :class="{ 'animate-pulse': isSubmitting }">
-                                    {{ isSubmitting ? 'sync' : 'warning' }}
-                                </span>
-                                <div class="flex flex-col">
-                                    <span class="text-[10px] font-mono text-slate-400">STATUS_CHECK</span>
-                                    <span class="text-xs font-bold font-mono tracking-wider"
-                                        :class="isSubmitting ? 'text-[#0df2f2]' : 'text-amber-400'">
-                                        {{ systemStatus }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-4 w-full md:w-auto">
-                                <button @click="handleClose" type="button"
-                                    class="flex-1 md:flex-none px-6 py-3 rounded text-slate-300 font-mono text-[11px] border border-transparent hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all uppercase tracking-widest">
-                                    Abort_Sequence
-                                </button>
-                                <button @click="registerOperative" :disabled="isSubmitting" type="submit"
-                                    class="flex-1 md:flex-none relative group/btn overflow-hidden px-8 py-3 bg-[#0df2f2]/10 text-[#0df2f2] font-bold text-[11px] font-mono rounded border border-[#0df2f2] hover:bg-[#0df2f2] hover:text-[#0a192f] transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(13,242,242,0.2)] hover:shadow-[0_0_30px_rgba(13,242,242,0.6)] disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <span class="relative z-10 flex items-center justify-center gap-2">
-                                        <span class="material-symbols-outlined text-base">fingerprint</span>
-                                        {{ isSubmitting ? 'INITIALIZING...' : 'Register_Operative' }}
-                                    </span>
-                                </button>
-                            </div>
-                        </footer>
-                    </div>
-                </div>
-            </div>
-        </Transition>
-    </Teleport>
 </template>
 
 <style scoped>
