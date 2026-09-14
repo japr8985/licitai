@@ -3,7 +3,9 @@ import { ref, onMounted, computed } from 'vue';
 import api from '@tenant/api/axios';
 import { User, Employee } from '@tenant/types/api';
 import InjectEspecialist from '@tenant/components/Talent/InjectEspecialist.vue';
-
+import CyberModal from '@tenant/components/ui/CyberModal.vue';
+import { useUIStore } from '@tenant/store/ui';
+const ui = useUIStore()
 
 const employees = ref<Employee[]>([]);
 const isLoading = ref(true);
@@ -70,6 +72,7 @@ const getStatusConfig = (status: string, allocation: string = 'AVAILABLE') => {
         pulse: true
     };
 };
+
 </script>
 <template>
     <div class="h-full w-full bg-[#0a192f] text-[#ccd6f6] flex flex-col overflow-hidden">
@@ -96,7 +99,7 @@ const getStatusConfig = (status: string, allocation: string = 'AVAILABLE') => {
                            placeholder="Search_Database..." 
                            type="text" />
                 </div>
-                <InjectEspecialist />
+                <InjectEspecialist @specialist-injected=""/>
             </div>
         </header>
 

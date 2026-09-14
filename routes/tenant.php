@@ -13,6 +13,7 @@ use App\Http\Controllers\Tenant\UploadFileController;
 use App\Http\Controllers\Tenant\FileDownloadController;
 use App\Http\Middleware\VerifyN8nSignature;
 use App\Http\Controllers\Tenant\EmployeeController;
+use App\Http\Controllers\Tenant\ProxyChatController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 Route::middleware([
@@ -72,6 +73,11 @@ Route::middleware([
                     Route::put('/{employee}', [EmployeeController::class, 'update']);
                     Route::get('/{employee}', [EmployeeController::class, 'show']);
                     // Route::post('/finalize', [ProjectController::class, 'reanalyze']);
+                });
+
+                Route::group(['prefix' => 'chat'], function() {
+                    Route::post('/', [ProxyChatController::class, 'message_from_frontend_to_n8n']);
+                    Route::post('/receive', [ProxyChatController::class, 'message_from_n8n_to_frontend']);
                 });
                 // perfil del usuario
                 Route::get('/user', [AuthController::class, 'me']);

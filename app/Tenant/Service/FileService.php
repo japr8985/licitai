@@ -59,7 +59,7 @@ final class FileService
     }
     /**
      * Genera una URL firmada y temporal para acceso externo (ej: n8n).
-     * * @param string $path Ruta relativa guardada en la DB.
+     * @param string $path Ruta relativa guardada en la DB.
      * @param int $expiration Minutos de validez.
      * @return string
      */

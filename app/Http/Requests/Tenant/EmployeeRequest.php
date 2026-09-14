@@ -26,7 +26,18 @@ class EmployeeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            // Datos del Usuario
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'nullable|string|min:8', // Opcional, podemos generar uno por defecto
+            
+            // Datos del Empleado
+            'job_title' => 'required|string|max:255',
+            'department' => 'nullable|string|max:255',
+            
+            // Archivos
+            'avatar_uuid' => 'nullable|string',
+            'cv_uuid' => 'nullable|string',
         ];
     }
     protected function failedValidation(Validator $validator)

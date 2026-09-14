@@ -13,10 +13,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
         // A. Inyección de CSRF Token (Vital para Laravel Sanctum/Session)
         // Laravel guarda el token en una cookie llamada 'XSRF-TOKEN'.
         // Debemos leerla y ponerla en el header 'X-XSRF-TOKEN'.
-        const token = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('XSRF-TOKEN='))
-            ?.split('=')[1];
+        const token = sessionStorage.getItem('access_token')
 
         if (token) {
             config.headers['X-XSRF-TOKEN'] = decodeURIComponent(token);

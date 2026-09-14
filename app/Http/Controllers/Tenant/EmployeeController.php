@@ -7,6 +7,7 @@ use App\Models\Tenant\Employee;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use App\Enums\EmployeeStatus;
+use App\Http\Requests\Tenant\EmployeeRequest;
 use App\Jobs\Tenant\ExtractSkillsFromCvJob;
 use App\Tenant\Service\FileService;
 use Illuminate\Support\Facades\DB;
@@ -38,35 +39,20 @@ class EmployeeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(EmployeeRequest $request)
     {
-        // 1. Validación estricta
-        $validated = $request->validate([
-            // Datos del Usuario
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'nullable|string|min:8', // Opcional, podemos generar uno por defecto
-            
-            // Datos del Empleado
-            'job_title' => 'required|string|max:255',
-            'department' => 'nullable|string|max:255',
-            
-            // Archivos
-            'avatar_uuid' => 'nullable|string',
-            'cv_uuid' => 'nullable|string',
-        ]);
 
         try {
             // 2. Transacción: Todo o nada
-            $employee = DB::transaction(function () use ($request, $validated) {
+            $employee = DB::transaction(function () use ($request) {
                 
                 // Crear el Usuario base
                 // Si no envían password, le generamos uno aleatorio (ej. para que luego lo recupere)
-                $password = $validated['password'] ?? Str::random(12);
+                $password = $request->password?? Str::random(12);
                 
                 $user = \App\Models\User::create([
-                    'name' => $validated['name'],
-                    'email' => $validated['email'],
+                    'name' => $request->name,
+                    'email' => $request->email,
                     'password' => Hash::make($password),
                 ]);
 
@@ -95,8 +81,8 @@ class EmployeeController extends Controller
                 // Crear el Perfil de Empleado
                 $newEmployee = Employee::create([
                     'user_id' => $user->id,
-                    'job_title' => $validated['job_title'],
-                    'department' => $validated['department'],
+                    'job_title' => $request->job_title,
+                    'department' => $request->department,
                     'avatar_path' => $avatarPath,
                     'cv_path' => $cvPath,
                     'status' => \App\Enums\Tenant\EmployeeStatus::ACTIVE,

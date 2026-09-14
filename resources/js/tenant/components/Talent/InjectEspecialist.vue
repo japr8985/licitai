@@ -106,15 +106,15 @@ const registerOperative = async () => {
         const response = await api.post('/employees/finalize', finalPayload);
 
         emit('specialistInjected', response.data.content);
+        ui.notify('success', 'Success inject', response.data.message)
         handleClose();
 
     } catch (error: any) {
-        // alert("SYSTEM FAILURE: Unable to register operative. Link aborted.");
         if (error?.status) {
             if (error.status === 422) {
-                const errorData = error.data
-                formErrors.value = errorData.errors;
-                ui.notify('error', errorData.message)
+                const errorData = error.data.content
+                formErrors.value = error.data.content;
+                ui.notify('warning', 'System Error', error.data.message)
                 return;
             }
             ui.notify('error', 'System Error', error.response?.data?.message || 'Unexpected error occurred.');
